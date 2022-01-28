@@ -13,20 +13,27 @@ swrong db "Wrong password please try again",0ah,0dh,"press 1 if you want to regi
 ;============================================== end
 ;============================================== Program operations
 choose db "Choose your operation ^-^: ","$"
-operations db "1: Show details",0ah,0dh,"2: Book a ticket",0ah,0dh,"3: Send Complaiment",0ah,0dh,"$"
+operations db "1: Show details",0ah,0dh,"2: Book a ticket",0ah,0dh,"3: Send Complaiment",0ah,0dh,"4: Show Trips History",0ah,0dh,"$"
 askToFinish db "If you want to end the program press 'f' or any key to continue : ","$"
 tripTypes db "Trip typs",0ah,0dh,0ah,0dh,"1: Sea Trip",0ah,0dh,"2: Air Trip",0ah,0dh,"3: Wild Trip",0ah,0dh,"$"
 askTicketsNumber db "Enter the number of tickets : ","$"
 finishMsg db "The ticket is pooked successfully",0ah,0dh,"Number of tickets: ","$"
 askComplaint db "Please write your complaint here and press Enter twice to finish writing","$"
+tripsNumber db "Number of trips: ","$"
+tripTitle db "-Trip",0ah,0dh,"$"
+tripType db "Type: ","$"
+ticketNumber db "Number of tickets: ","$"
 ;==============================================
 ;============================================== User data
+counter dw 0
 password db 9 dup("$")
 user db 9 dup("$")
 phone db 12 dup("$")
 namef db "Name: ","$"
 phonef db "Phone: ","$"
-nl db 0ah,0dh,"$
+trips dw 20 dup ("$")
+two db 2
+nl db 0ah,0dh,"$"
 ;==============================================
 ;==============================================
 ;==============================================
@@ -68,6 +75,8 @@ main proc far
    je book
    cmp al,"3"
    je complain
+   cmp al,"4"
+   je history
    ;========================= showdetails
    showdetails:
    call newline
@@ -80,6 +89,10 @@ main proc far
    ;========================= complain
    complain:
    call complaint
+   jmp bye
+   ;========================= history
+   history:
+   call show_history
    jmp bye
    ;========================= bye
    bye:
@@ -99,6 +112,13 @@ print proc
 print endp
 ;=================================
 ;=================================
+print_c proc
+    mov ah,02h
+    int 21h
+    ret
+print_c endp
+;=================================
+;=================================
 newline proc
     lea dx,nl
     call print
@@ -109,6 +129,7 @@ newline endp
 char_input proc 
     mov ax,0100h
     int 21h
+    mov ah,00h
     ret
 char_input endp
 ;=================================
@@ -219,19 +240,23 @@ booking proc near
    lea dx,choose
    call print
    call char_input
+   mov bh,al
    call newline
    lea dx,askTicketsNumber
    call print
-   
    call char_input
+   ;push ax
    call newline
    mov bl,al
+   mov di,counter
+   mov trips[0+di],bx
    lea dx,finishMsg
    call print
    mov dl,bl
    mov ax,0200h
    int 21h
    call newline
+   add counter,2
    ret
 booking endp
 ;=================================
@@ -262,4 +287,44 @@ complaint proc near
     close:
     ret
 complaint endp
+show_history proc
+    cmp counter,0
+    je ff
+    call newline
+    lea dx,tripsNumber
+    call print
+    mov ax,counter
+    div two
+    mov dl,al
+    mov cl,al
+    mov bx,counter
+    add dl,48
+    call print_c
+    call newline
+    add cl,48
+    printTrips:
+    sub bx,2
+    mov dl,cl
+    call print_c
+    lea dx,tripTitle
+    call print
+    lea dx,tripType
+    call print
+    mov ax,trips[bx]
+    mov dl,ah
+    call print_c
+    call newline
+    lea dx,ticketNumber
+    call print
+    mov ax,trips[bx]
+    mov dl,al
+    call print_C
+    call newline
+    call newline
+    dec cl
+    cmp bx,0
+    jne printTrips
+    ff:
+    ret
+show_history endp
 end main
